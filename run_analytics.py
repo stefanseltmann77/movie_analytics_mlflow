@@ -26,6 +26,8 @@ if __name__ == "__main__":
     term_confidence = int(float(args.get('term_confidence', 3)))
     use_tfidf = args.get('use_tfidf', 'yes') == 'yes'
 
+    mlflow.set_experiment("MovieAnalytics")
+
     with mlflow.start_run():
         oa = OscarAnalytics(Path("./dataset/movie_prof.csv"))
         df_movies = oa.load_data()

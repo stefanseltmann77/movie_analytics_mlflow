@@ -14,3 +14,5 @@ entry_points:
 
 # example:
 # mlflow run  -P target=is_genre_horror -P use_tfidf=yes /home/btraining/PycharmProjects/oscar_analytics
+
+# mlflow run  -P target=is_genre_horror -P use_tfidf=yes https://github.com/stefanseltmann77/movie_analytics_mlflow.git
