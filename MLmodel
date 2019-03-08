@@ -1,0 +1,6 @@
+flavors:
+  python_function:
+    code: simple_tree
+    loader_module: mlflow.sklearn
+    env: conda_env.yml
+    main: simple_model

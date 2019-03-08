@@ -1,0 +1,16 @@
+name: b.awarded
+
+conda_env: conda_env.yml
+
+entry_points:
+  main:
+    parameters:
+      target: {type: string, default: "is_oscar_winner"}
+      term_confidence: {type: float, default: 3.0}
+      use_tfidf: {type: string, default: "yes"}
+      max_depth: {type: float, default: 3}
+      n_estimators: {type: float, default: 10}
+    command: "python run_analytics.py target={target} term_confidence={term_confidence} use_tfidf={use_tfidf} n_estimators={n_estimators} max_depth={max_depth}"
+
+# example:
+# mlflow run  -P target=is_genre_horror -P use_tfidf=yes /home/btraining/PycharmProjects/oscar_analytics
