@@ -25,10 +25,13 @@ if __name__ == "__main__":
     target_feature = args.get('target', 'is_oscar_winner')
     term_confidence = int(float(args.get('term_confidence', 3)))
     use_tfidf = args.get('use_tfidf', 'yes') == 'yes'
+    n_estimators = int(args.get('n_estimators', 10))
 
+    mlflow.set_tracking_uri("/home/ubuntu/mlruns")
     mlflow.set_experiment("MovieAnalytics")
 
     with mlflow.start_run():
+        mlflow.log_params({'use_tfidf': use_tfidf, 'target_feature': target_feature})
         oa = OscarAnalytics(Path("./dataset/movie_prof.csv"))
         df_movies = oa.load_data()
         df_movies = oa.clean_data(df_movies)
@@ -55,7 +58,7 @@ if __name__ == "__main__":
         oa.create_wordcloud(df_words.loc[target == 0], 'nontarget')
         oa.create_wordcloud(df_words.loc[target == 1], 'target')
         classifier = \
-            RandomForestClassifier(n_estimators=100,
+            RandomForestClassifier(n_estimators=n_estimators,
                                    min_samples_split=50,
                                    min_samples_leaf=15,
                                    max_depth=3). \
@@ -75,3 +78,4 @@ if __name__ == "__main__":
 
         mlflow.log_artifacts('./charts')
 
+        # mlflow run https://github.com/stefanseltmann77/movie_analytics_mlflow.git --experiment-name=MovieAnalytics
