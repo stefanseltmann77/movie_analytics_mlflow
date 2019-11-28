@@ -12,6 +12,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import cross_val_score
 
 from oscar_analytics import OscarAnalytics
+from conf.configs import configs
 
 pd.set_option('display.width', 200)
 pd.set_option('display.max_columns', 999)
@@ -27,7 +28,7 @@ if __name__ == "__main__":
     use_tfidf = args.get('use_tfidf', 'yes') == 'yes'
     n_estimators = int(args.get('n_estimators', 10))
 
-    mlflow.set_tracking_uri("/home/ubuntu/mlruns")
+    mlflow.set_tracking_uri(configs.get("paths", "mlruns"))
     mlflow.set_experiment("MovieAnalytics")
 
     with mlflow.start_run():
@@ -52,7 +53,6 @@ if __name__ == "__main__":
         df_words.sum().sort_values().to_dict()
 
         # target = df_movies.award_noms_oscar >= OSCARS_MIN
-        # target = df_movies.is_oscar_winner
         target = df_movies[target_feature]
 
         oa.create_wordcloud(df_words.loc[target == 0], 'nontarget')
@@ -70,12 +70,14 @@ if __name__ == "__main__":
         mlflow.log_metric("auc_cv10_median", cv)
 
         df_importance = pd.DataFrame(classifier.feature_importances_, columns=['term'], index=feature_names)
-        df_words_expl = df_words.copy()
+        df_words_expl = df_words# .copy()
         df_words_expl.loc[:, 'target'] = target
         df_words_expl = df_words_expl.groupby("target").mean().transpose()
 
         oa.create_importance_plot(df_importance, df_words_expl)
 
         mlflow.log_artifacts('./charts')
+        del df_words_expl
+        del df_movies
 
         # mlflow run https://github.com/stefanseltmann77/movie_analytics_mlflow.git --experiment-name=MovieAnalytics
