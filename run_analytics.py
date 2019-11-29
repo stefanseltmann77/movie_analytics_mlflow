@@ -28,7 +28,7 @@ if __name__ == "__main__":
     use_tfidf = args.get('use_tfidf', 'yes') == 'yes'
     n_estimators = int(args.get('n_estimators', 10))
 
-    mlflow.set_tracking_uri(configs.get("paths", "mlruns"))
+    # mlflow.set_tracking_uri(configs.get("paths", "mlruns"))
     mlflow.set_experiment("MovieAnalytics")
 
     with mlflow.start_run():
