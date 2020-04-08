@@ -3,64 +3,64 @@ from pathlib import Path
 
 import pandas as pd
 from matplotlib import pyplot as plt
-from pandas import np
+from pandas import DataFrame
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from wordcloud import WordCloud
 
-from listings import oscar_winners, top_250_engl, worst_100
+from movie_analytics.conf import project_dir
 
 
-class OscarAnalytics:
+class OscarTextAnalytics:
     logger: logging.Logger
-    datafile: Path
+    chart_dir: Path
 
-    def __init__(self, datafile: Path):
+    def __init__(self, chart_dir=Path(project_dir, 'charts')):
         self.logger = logging.getLogger(__name__)
-        self.datafile = datafile
-
-    def load_data(self) -> pd.DataFrame:
-        self.logger.info(f"Loaded data from {self.datafile}")
-        df = pd.read_csv(self.datafile, index_col='imdb_movie_id',
-                         dtype={'rating_imdb_count': np.int64})
-        return df
-
-    def clean_data(self, df: pd.DataFrame) -> pd.DataFrame:
-        self.logger.info(f"Cleaning Data")
-        df.storyline = df.storyline.astype(str)
-        df.synopsis = df.synopsis.astype(str)
-        df.loc[df.synopsis.str.startswith("It looks like we don't have a Synopsis"), 'synopsis'] = np.NaN
-        # take only cases with sensible size
-        return df.loc[df.storyline.str.len() > 100]
-
-    def add_ranking_flags(self, df: pd.DataFrame) -> pd.DataFrame:
-        self.logger.info("Adding potential target flags")
-        df['is_oscar_winner'] = np.where(df.index.isin(oscar_winners), 1, 0)
-        df['is_top250'] = np.where(df.index.isin(top_250_engl), 1, 0)
-        df['is_worst100'] = np.where(df.index.isin(worst_100), 1, 0)
-        return df
+        self.chart_dir = chart_dir
 
     def create_wordcloud(self, df_words: pd.DataFrame, label: str):
-        self.logger.info(f"Plotting Wordcloud for {label}")
+        self.logger.info(f"Plotting wordcloud for {label}")
         wordcloud = WordCloud(width=480, height=480, margin=0). \
             fit_words(frequencies=df_words.sum().sort_values().to_dict())
         plt.imshow(wordcloud, interpolation='bilinear')
         plt.axis("off")
         plt.margins(x=0, y=0)
-        plt.savefig(f"./charts/word_cloud_{label}.png")
+        chart_path = self.chart_dir / Path(f"word_cloud_{label}.png")
+        plt.savefig(chart_path)
+        return chart_path
 
-    def create_importance_plot(self, df_importance, df_words_expl, display_limit: int=20):
+    def create_importance_plot(self,
+                               df_importance: DataFrame,
+                               df_words_expl: DataFrame,
+                               display_limit: int = 20):
         self.logger.info(f"Plotting feature importance for top {display_limit} features")
-        df_lift = pd.concat([df_importance, df_words_expl], axis=1, sort=False).\
-                      sort_values('term', ascending=False)[:display_limit]
+        df_lift: DataFrame = pd.concat([df_importance, df_words_expl], axis=1, sort=False). \
+                                 sort_values('term', ascending=False)[:display_limit]
         df_lift['lift'] = df_lift[1] / df_lift[0]
         df_lift = df_lift[['term', 'lift']]
 
         df_lift.plot(kind='scatter', x='term', y='lift', color='royalblue')
         for i in range(df_lift.shape[0]):
             row = df_lift.iloc[i]
-            plt.annotate(row.name, (row.term+0.0005, row.lift))
+            plt.annotate(row.name, (row.term + 0.0005, row.lift))
         plt.ylabel("LIFT, measured in relative item frequency")
         plt.xlabel("feature importance")
         plt.title(f"The {display_limit} most important features")
-        plt.xlim(df_lift.term.min()*0.9, df_lift.term.max()*1.1)
+        plt.xlim(df_lift.term.min() * 0.9, df_lift.term.max() * 1.1)
         plt.tight_layout()
-        plt.savefig(f"./charts/feature_importance.png")
+        chart_path = self.chart_dir / Path(f'feature_importance.png')
+        plt.savefig(chart_path)
+        return chart_path
+
+    def build_bag_of_words(self, df_movies: DataFrame, term_confidence: int, use_tfidf: bool) -> DataFrame:
+        """build word matrix with counts"""
+        vectorizer = CountVectorizer(stop_words='english', min_df=term_confidence, max_df=0.3, ngram_range=(1, 2))
+        matrix = vectorizer.fit_transform(df_movies.storyline)
+        feature_names = vectorizer.get_feature_names()
+        if use_tfidf:
+            # build word matrix with tfidf_counts
+            vectorizer_tfidf = TfidfTransformer(use_idf=True)
+            matrix = vectorizer_tfidf.fit_transform(matrix)
+        # datasets, plain an tfidf
+        df_words = pd.DataFrame(matrix.toarray(), columns=feature_names, index=df_movies.index)
+        return df_words
