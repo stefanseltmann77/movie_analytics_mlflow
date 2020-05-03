@@ -1,18 +1,18 @@
-name: b.awarded
+name: MovieAnalytics
 
-conda_env: conda_env.yml
+conda_env: movie_analytics/conf/conda_env.yml
 
 entry_points:
   main:
     parameters:
-      target: {type: string, default: "is_oscar_winner"}
-      term_confidence: {type: float, default: 3.0}
-      use_tfidf: {type: string, default: "yes"}
-      max_depth: {type: float, default: 3}
-      n_estimators: {type: float, default: 10}
-    command: "python run_analytics.py target={target} term_confidence={term_confidence} use_tfidf={use_tfidf} n_estimators={n_estimators} max_depth={max_depth}"
-
-# example:
-# mlflow run  -P target=is_genre_horror -P use_tfidf=yes /home/btraining/PycharmProjects/oscar_analytics
-
-# mlflow run  -P target=is_genre_horror -P use_tfidf=yes https://github.com/stefanseltmann77/movie_analytics_mlflow.git
+      target-feature: {type: string, default: "is_oscar_winner"}
+      term-confidence: {type: float, default: 0.01}
+      use-tfidf: {type: bool, default: True}
+      max-depth: {type: float, default: 3}
+      n-estimators: {type: int, default: 10}
+    command: "python run_bow_classifier.py
+                --target-feature={target-feature}
+                --term-confidence={term-confidence}
+                --use-tfidf={use-tfidf}
+                --n-estimators={n-estimators}
+                --max-depth={max-depth}"

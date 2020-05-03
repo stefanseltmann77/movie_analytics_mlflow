@@ -2,5 +2,7 @@ flavors:
   python_function:
     code: simple_tree
     loader_module: mlflow.sklearn
-    env: conda_env.yml
+    env: movie_analytics/conf/conda_env.yml
     main: simple_model
+  sklearn:
+    pickled_model: movie_analytics/model_pick/model.pkl

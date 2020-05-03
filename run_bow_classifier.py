@@ -21,20 +21,15 @@ pd.set_option('display.max_columns', 999)
 
 @click.command(name='run')
 @click.option("--target-feature", type=click.STRING, default="is_oscar_winner")
-@click.option("--term-confidence", type=click.FLOAT, default=1)
-@click.option("--use_tfidf", type=click.BOOL, default=True)
-@click.option("--n-estimators", type=click.INT, default=100)
-def run_bow_classifier(target_feature, term_confidence, use_tfidf, n_estimators):
+@click.option("--term-confidence", type=click.FLOAT, default=0.01)
+@click.option("--use-tfidf", type=click.BOOL, default=True)
+@click.option("--max-depth", type=click.INT, default=10)
+@click.option("--n-estimators", type=click.INT, default=200)
+def run_bow_classifier(target_feature, term_confidence, use_tfidf, n_estimators, max_depth):
     mlflow.set_tracking_uri(configs.get("paths", "mlruns"))
-
-    mlflow.set_experiment("MovieAnalytics_Texts")
+    # mlflow.set_experiment("MovieAnalytics_bow_oscar_winner")
 
     with mlflow.start_run():
-        mlflow.log_params({'use_tfidf': use_tfidf,
-                           'target_feature': target_feature,
-                           'term_confidence': term_confidence,
-                           'n_estimators': n_estimators})
-
         dataloader = DataLoader()
         oa = OscarTextAnalytics()
 
@@ -50,12 +45,13 @@ def run_bow_classifier(target_feature, term_confidence, use_tfidf, n_estimators)
                    ('classifier', RandomForestClassifier(n_estimators=n_estimators,
                                                          min_samples_split=20,
                                                          min_samples_leaf=15,
-                                                         max_depth=3))], verbose=False)
+                                                         max_depth=max_depth))], verbose=False)
         if use_tfidf:
             pipe.steps.insert(len(pipe) - 1, ('tfidftransformer', TfidfTransformer(use_idf=True)))
 
         pipe.fit(df_movies.storyline, y=target)
         feature_importances = pipe.steps[-1][1].feature_importances_
+        mlflow.sklearn.log_model(pipe, 'bow_prediction_' + target_feature)
 
         cv = np.median(cross_val_score(pipe, df_movies.storyline, target, scoring='roc_auc', cv=10))
         auc = roc_auc_score(target, pipe.predict_proba(df_movies.storyline)[:, 1])
