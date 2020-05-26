@@ -23,6 +23,7 @@ class DataLoader:
         self.logger.info(f"Loaded data from {datafile}")
         df = pd.read_csv(datafile,
                          index_col='imdb_movie_id',
+                         error_bad_lines=False,
                          dtype={'rating_imdb_count': np.int64})
         return df
 
